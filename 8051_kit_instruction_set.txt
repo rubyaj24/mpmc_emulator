@@ -1,0 +1,78 @@
+8051 MICROCONTROLLER INSTRUCTION SET
+
+DATA TRANSFER INSTRUCTIONS:
+MOV     - Move data between registers, memory, or immediate values
+MOVC    - Move code byte (used with A and DPTR/PC)
+MOVX    - Move external data (used with external memory)
+PUSH    - Push data onto stack
+POP     - Pop data from stack
+XCH     - Exchange accumulator with register or memory
+XCHD    - Exchange accumulator with lower nibble of memory
+SWAP    - Swap nibbles of accumulator
+
+ARITHMETIC INSTRUCTIONS:
+ADD     - Add
+ADDC    - Add with carry
+SUBB    - Subtract with borrow
+INC     - Increment
+DEC     - Decrement
+MUL AB  - Multiply A by B
+DIV AB  - Divide A by B
+DA A    - Decimal adjust accumulator
+
+LOGICAL / BITWISE INSTRUCTIONS:
+ANL     - Logical AND
+ORL     - Logical OR
+XRL     - Logical XOR
+CPL     - Complement (1’s complement)
+CLR     - Clear bit or register
+RL      - Rotate accumulator left
+RLC     - Rotate accumulator left through carry
+RR      - Rotate accumulator right
+RRC     - Rotate accumulator right through carry
+
+BRANCH / JUMP INSTRUCTIONS:
+SJMP    - Short jump (within 128 bytes)
+AJMP    - Absolute jump (within 2K block)
+LJMP    - Long jump (anywhere in 64K)
+ACALL   - Absolute call (within 2K block)
+LCALL   - Long call (anywhere in 64K)
+RET     - Return from subroutine
+RETI    - Return from interrupt
+JMP @A+DPTR - Jump indirect via accumulator + DPTR
+JC      - Jump if carry set
+JNC     - Jump if carry not set
+JZ      - Jump if accumulator zero
+JNZ     - Jump if accumulator not zero
+CJNE    - Compare and jump if not equal
+DJNZ    - Decrement and jump if not zero
+NOP     - No operation
+
+BIT MANIPULATION INSTRUCTIONS:
+SETB    - Set bit
+CLR     - Clear bit
+CPL     - Complement bit
+ANL C,bit - AND carry with bit
+ORL C,bit - OR carry with bit
+MOV C,bit - Move bit to carry
+MOV bit,C - Move carry to bit
+JBC     - Jump if bit set and clear bit
+
+INPUT/OUTPUT INSTRUCTIONS:
+MOV Pn,A - Move accumulator to port
+MOV A,Pn - Move port to accumulator
+
+MISCELLANEOUS INSTRUCTIONS:
+NOP     - No operation
+HLT     - Halt CPU (on some variants)
+SJMP $  - Infinite loop
+
+ADDRESSING MODES SUPPORTED:
+Immediate      (#data)
+Register        (A, B, R0–R7)
+Direct          (00H–7FH internal RAM/SFR)
+Register Indirect (@R0/@R1)
+Indexed         (@A+DPTR or @A+PC)
+
+NOTE:
+These are standard 8051 hardware-level instructions used in assembly programming on microcontroller kits and simulators.

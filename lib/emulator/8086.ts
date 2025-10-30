@@ -158,6 +158,34 @@ export class Emulator8086 {
     }
   }
 
+  /**
+   * Load program bytes into program memory (starting at address 0x0000)
+   */
+  loadProgram(bytes: number[]) {
+    for (let i = 0; i < bytes.length; i++) {
+      this.memory[i] = bytes[i] & 0xFF;
+    }
+    this.registers.IP = 0;
+  }
+
+  /**
+   * Fetch instruction byte from program memory at given address
+   */
+  fetchByte(address?: number): number {
+    const addr = address ?? (this.registers.CS * 16 + this.registers.IP);
+    return this.memory[addr & 0xFFFFF] || 0;
+  }
+
+  /**
+   * Fetch 16-bit word from program memory
+   */
+  fetchWord(address?: number): number {
+    const addr = address ?? (this.registers.CS * 16 + this.registers.IP);
+    const low = this.memory[addr & 0xFFFFF] || 0;
+    const high = this.memory[(addr + 1) & 0xFFFFF] || 0;
+    return (high << 8) | low;
+  }
+
   readMemory(address: number): number {
     return this.memory[address & 0xFFFFF] || 0;
   }

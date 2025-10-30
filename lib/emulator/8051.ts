@@ -92,6 +92,43 @@ export class Emulator8051 {
     this.halted = false;
   }
 
+  /**
+   * Load program bytes into program memory (starting at address 0x0000)
+   */
+  loadProgram(bytes: number[]) {
+    for (let i = 0; i < bytes.length; i++) {
+      this.memory[i] = bytes[i] & 0xFF;
+    }
+    this.registers.PC = 0;
+  }
+
+  /**
+   * Load external memory (like XRAM) at specified address
+   */
+  loadExternalMemory(address: number, values: number[]) {
+    for (let i = 0; i < values.length; i++) {
+      this.writeMemory(address + i, values[i]);
+    }
+  }
+
+  /**
+   * Fetch instruction byte(s) from program memory at current PC
+   */
+  fetchByte(address?: number): number {
+    const addr = address ?? this.registers.PC;
+    return this.memory[addr & 0xFFFF] || 0;
+  }
+
+  /**
+   * Fetch 16-bit word from program memory
+   */
+  fetchWord(address?: number): number {
+    const addr = address ?? this.registers.PC;
+    const low = this.memory[addr & 0xFFFF] || 0;
+    const high = this.memory[(addr + 1) & 0xFFFF] || 0;
+    return (high << 8) | low;
+  }
+
   readMemory(address: number): number {
     return this.memory[address & 0xFFFF] || 0;
   }
@@ -136,6 +173,8 @@ export class Emulator8051 {
       switch (mnemonic.toUpperCase()) {
         case 'MOV':
           return this.executeMOV(operands);
+        case 'MOVX':
+          return this.executeMOVX(operands);
         case 'ADD':
           return this.executeADD(operands);
         case 'SUBB':
@@ -148,6 +187,8 @@ export class Emulator8051 {
           return this.executeMUL(operands);
         case 'DIV':
           return this.executeDIV(operands);
+        case 'RLC':
+          return this.executeRLC(operands);
         case 'ANL':
           return this.executeANL(operands);
         case 'ORL':
@@ -180,6 +221,39 @@ export class Emulator8051 {
     }
   }
 
+  private executeMOVX(operands: string[]): string {
+    if (operands.length !== 2) return 'MOVX requires 2 operands';
+
+    const dest = operands[0].trim();
+    const src = operands[1].trim();
+
+    // MOVX <reg>, @DPTR  -> read external memory at DPTR into register
+    if (src.toUpperCase() === '@DPTR') {
+      const addr = this.registers.DPTR & 0xffff;
+      const val = this.readMemory(addr) & 0xff;
+      
+      if (dest.toUpperCase() === 'A') {
+        this.registers.A = val;
+        this.updateFlags(this.registers.A);
+      } else {
+        // For other registers (B, R0-R7, etc)
+        this.setRegisterValue(dest, val);
+      }
+      
+      return `MOVX ${dest}, @DPTR (${dest}=0x${val.toString(16).toUpperCase()}, DPTR=${addr})`;
+    }
+
+    // MOVX @DPTR, <reg> -> write register to external memory at DPTR
+    if (dest.toUpperCase() === '@DPTR') {
+      const addr = this.registers.DPTR & 0xffff;
+      const val = this.getOperandValue(src) & 0xff;
+      this.writeMemory(addr, val);
+      return `MOVX @DPTR, ${src} (Wrote 0x${val.toString(16).toUpperCase()} to ${addr})`;
+    }
+
+    return 'MOVX: unsupported addressing mode';
+  }
+
   private executeMOV(operands: string[]): string {
     if (operands.length !== 2) return 'MOV requires 2 operands';
 
@@ -189,7 +263,7 @@ export class Emulator8051 {
     const value = this.getOperandValue(src);
     this.setOperandValue(dest, value);
 
-    return `MOV ${dest}, ${src} (value: ${value})`;
+    return `MOV ${dest}, ${src} (value: ${value}, registers: A=${this.registers.A}, B=${this.registers.B})`;
   }
 
   private executeADD(operands: string[]): string {
@@ -243,8 +317,14 @@ export class Emulator8051 {
 
     const dest = operands[0].trim();
     const value = this.getOperandValue(dest);
-    const result = (value + 1) & 0xFF;
+    // DPTR is 16-bit and must be handled specially
+    if (dest.toUpperCase() === 'DPTR') {
+      const result = (value + 1) & 0xFFFF;
+      this.setRegisterValue('DPTR', result);
+      return `INC ${dest} (result: ${result})`;
+    }
 
+    const result = (value + 1) & 0xFF;
     this.setOperandValue(dest, result);
 
     return `INC ${dest} (result: ${result})`;
@@ -255,8 +335,14 @@ export class Emulator8051 {
 
     const dest = operands[0].trim();
     const value = this.getOperandValue(dest);
-    const result = (value - 1) & 0xFF;
+    // DPTR is 16-bit and must be handled specially
+    if (dest.toUpperCase() === 'DPTR') {
+      const result = (value - 1) & 0xFFFF;
+      this.setRegisterValue('DPTR', result);
+      return `DEC ${dest} (result: ${result})`;
+    }
 
+    const result = (value - 1) & 0xFF;
     this.setOperandValue(dest, result);
 
     return `DEC ${dest} (result: ${result})`;
@@ -281,20 +367,40 @@ export class Emulator8051 {
       return 'DIV requires operand AB';
     }
 
-    if (this.registers.B === 0) {
+    const dividend = this.registers.A;
+    const divisor = this.registers.B;
+
+    if (divisor === 0) {
       this.flags.OV = true;
       return 'DIV AB (Division by zero)';
     }
 
-    const quotient = Math.floor(this.registers.A / this.registers.B);
-    const remainder = this.registers.A % this.registers.B;
+    const quotient = Math.floor(dividend / divisor);
+    const remainder = dividend % divisor;
 
     this.registers.A = quotient & 0xFF;
     this.registers.B = remainder & 0xFF;
     this.flags.C = false;
     this.flags.OV = false;
 
-    return `DIV AB (A: ${this.registers.A}, B: ${this.registers.B})`;
+    return `DIV AB (${dividend} ÷ ${divisor} = A: ${this.registers.A}, B: ${this.registers.B})`;
+  }
+
+  private executeRLC(operands: string[]): string {
+    // RLC A  -> rotate accumulator left through carry
+    if (operands.length === 0 || (operands.length === 1 && operands[0].trim().toUpperCase() === 'A')) {
+      const a = this.registers.A & 0xFF;
+      const carryIn = this.flags.C ? 1 : 0;
+      const newCarry = (a & 0x80) !== 0;
+      const result = ((a << 1) | carryIn) & 0xFF;
+      this.registers.A = result;
+      this.flags.C = newCarry;
+      // RLC affects carry; update parity flag for A as well
+      this.updateFlags(this.registers.A);
+      return `RLC A (result: ${this.registers.A}, C: ${this.flags.C})`;
+    }
+
+    return 'RLC: unsupported operand';
   }
 
   private executeANL(operands: string[]): string {
@@ -489,7 +595,9 @@ export class Emulator8051 {
     } else if (str.endsWith('B')) {
       return parseInt(str.slice(0, -1), 2);
     } else {
-      return parseInt(str, 10);
+      // 8051 assembly convention: plain numbers are hexadecimal
+      // e.g., 8500 means 0x8500, not 8500 decimal
+      return parseInt(str, 16);
     }
   }
 }

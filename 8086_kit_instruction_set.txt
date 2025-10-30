@@ -1,0 +1,86 @@
+8086 KIT INSTRUCTION SET
+
+DATA TRANSFER INSTRUCTIONS:
+MOV     - Move data between registers or memory
+XCHG    - Exchange data between registers
+PUSH    - Push data onto stack
+POP     - Pop data from stack
+IN      - Read from I/O port
+OUT     - Write to I/O port
+LEA     - Load effective address
+LDS/LES - Load DS/ES with pointer
+
+ARITHMETIC INSTRUCTIONS:
+ADD     - Add
+ADC     - Add with carry
+SUB     - Subtract
+SBB     - Subtract with borrow
+INC     - Increment
+DEC     - Decrement
+MUL     - Unsigned multiply
+IMUL    - Signed multiply
+DIV     - Unsigned divide
+IDIV    - Signed divide
+NEG     - Two’s complement
+CMP     - Compare (sets flags)
+DAA     - Decimal adjust after add
+DAS     - Decimal adjust after sub
+
+LOGICAL / BITWISE INSTRUCTIONS:
+AND     - Logical AND
+OR      - Logical OR
+XOR     - Logical XOR
+NOT     - Logical NOT
+TEST    - Logical AND for flags only
+SHL/SAL - Shift left
+SHR     - Shift right
+ROL/ROR - Rotate left/right
+RCL/RCR - Rotate through carry
+
+BRANCH / JUMP INSTRUCTIONS:
+JMP     - Unconditional jump
+CALL    - Call subroutine
+RET     - Return from subroutine
+JE/JZ   - Jump if equal/zero
+JNE/JNZ - Jump if not equal/not zero
+JC/JNC  - Jump if carry/no carry
+JA/JAE  - Jump if above/above or equal (unsigned)
+JB/JBE  - Jump if below/below or equal (unsigned)
+JG/JGE  - Jump if greater/greater or equal (signed)
+JL/JLE  - Jump if less/less or equal (signed)
+JS/JNS  - Jump if sign/no sign
+JO/JNO  - Jump if overflow/no overflow
+LOOP    - Loop with CX counter
+
+STRING INSTRUCTIONS:
+MOVSB/MOVSW - Move string byte/word
+CMPSB/CMPSW - Compare strings
+SCASB/SCASW - Scan string
+LODSB/LODSW - Load string element
+STOSB/STOSW - Store string element
+REP/REPE/REPNE - Repeat prefix
+
+FLAG CONTROL INSTRUCTIONS:
+STC - Set carry flag
+CLC - Clear carry flag
+CMC - Complement carry flag
+STD - Set direction flag
+CLD - Clear direction flag
+STI - Enable interrupts
+CLI - Disable interrupts
+
+PROCESSOR CONTROL INSTRUCTIONS:
+HLT  - Halt processor
+NOP  - No operation
+WAIT - Wait for test pin
+LOCK - Bus lock prefix
+ESC  - Escape to coprocessor
+
+I/O INSTRUCTIONS:
+IN  - Read from port
+OUT - Write to port
+
+NOTE:
+These are pure 8086 hardware instructions (no assembler directives).
+Used directly on microprocessor trainer kits or simulators.
+Programs typically end with HLT.

@@ -1,9 +1,10 @@
-'use client';
+ 'use client';
 
 import { useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { useSimulatorStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
+import { getMnemonicsFor } from '@/lib/mnemonics';
 
 export function CodeEditor() {
   const { code, setCode, currentLine, processorType } = useSimulatorStore();
@@ -39,8 +40,77 @@ export function CodeEditor() {
     }
   }, [currentLine]);
 
-  const handleEditorDidMount = (editor: any) => {
+  const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
+
+    // Register a simple completion provider for mnemonics once per page.
+    try {
+      if (typeof window !== 'undefined' && !(window as any).__mnemonicsCompletionRegistered) {
+        (window as any).__mnemonicsCompletionRegistered = true;
+
+        monaco.languages.registerCompletionItemProvider('plaintext', {
+          provideCompletionItems: (model: any, position: any) => {
+            const word = model.getWordUntilPosition(position);
+            const range = {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn,
+            };
+
+            const mnemonics = getMnemonicsFor(processorType);
+
+            const suggestions = mnemonics.map((m) => ({
+              label: m.mnemonic,
+              kind: monaco.languages.CompletionItemKind.Function,
+              documentation: m.description,
+              insertText: m.mnemonic + ' ',
+              range,
+            }));
+
+            return { suggestions };
+          },
+        });
+      }
+    } catch (e) {
+      // If monaco isn't available or registration fails, silently ignore.
+      // This is non-critical UX enhancement.
+      // console.warn('Failed to register mnemonics completion', e);
+    }
+
+    // Listen for insertSnippet events to allow other components (e.g. mnemonics)
+    // to insert example snippets into the editor at the current cursor.
+    const insertHandler = (ev: Event) => {
+      try {
+        const detail = (ev as CustomEvent).detail as string | undefined;
+        if (!detail) return;
+        const ed = editorRef.current;
+        if (!ed) return;
+        const position = ed.getPosition();
+        ed.executeEdits('insert-snippet', [
+          {
+            range: {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column,
+            },
+            text: detail,
+            forceMoveMarkers: true,
+          },
+        ]);
+        ed.focus();
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    window.addEventListener('insertSnippet', insertHandler as EventListener);
+
+    // cleanup when editor unmounts
+    (editor as any)._disposeInsertHandler = () => {
+      window.removeEventListener('insertSnippet', insertHandler as EventListener);
+    };
   };
 
   return (

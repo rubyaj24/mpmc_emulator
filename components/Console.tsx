@@ -22,7 +22,7 @@ export function Console() {
   }
 
   return (
-    <Card className="border-2">
+    <Card className="border-2" data-terminal>
       <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4" />

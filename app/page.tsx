@@ -9,6 +9,12 @@ import { IOPorts } from '@/components/IOPorts';
 import { Console } from '@/components/Console';
 import { KeyboardHandler } from '@/components/KeyboardHandler';
 import { KeyboardHelpModal } from '@/components/KeyboardHelpModal';
+import MemoryEditModal from '@/components/MemoryEditModal';
+import { MnemonicsModal } from '@/components/MnemonicsModal';
+import { ExternalMemoryLoadModal } from '@/components/ExternalMemoryLoadModal';
+import { WelcomeModal } from '@/components/WelcomeModal';
+import { HelpSidebar } from '@/components/HelpSidebar';
+import { DisassemblyPanel } from '@/components/DisassemblyPanel';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -43,13 +49,26 @@ export default function Home() {
   } = useSimulatorStore();
 
   const [helpOpen, setHelpOpen] = useState(false);
+  const [mnemonicsOpen, setMnemonicsOpen] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [externalMemoryOpen, setExternalMemoryOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+
+  useEffect(() => {
+    // Show welcome modal on first visit
+    const hasVisited = localStorage.getItem('has-visited');
+    if (!hasVisited) {
+      setWelcomeOpen(true);
+      localStorage.setItem('has-visited', 'true');
+    }
+  }, []);
 
   useEffect(() => {
     const savedCode = localStorage.getItem(`code-${processorType}`);
     if (savedCode) {
       setCode(savedCode);
     }
-  }, [processorType]);
+  }, [processorType, setCode]);
 
   useEffect(() => {
     localStorage.setItem(`code-${processorType}`, code);
@@ -84,9 +103,14 @@ export default function Home() {
   };
 
   return (
-    <>
-      <KeyboardHandler onShowHelp={() => setHelpOpen(true)} />
-      <KeyboardHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
+      <>
+  <KeyboardHandler onShowHelp={() => setHelpOpen(true)} onOpenMemory={() => setMemoryOpen(true)} />
+  <KeyboardHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
+  <MnemonicsModal open={mnemonicsOpen} onOpenChange={setMnemonicsOpen} />
+  <MemoryEditModal open={memoryOpen} onOpenChange={setMemoryOpen} />
+  <ExternalMemoryLoadModal open={externalMemoryOpen} onOpenChange={setExternalMemoryOpen} />
+  <WelcomeModal open={welcomeOpen} onOpenChange={setWelcomeOpen} />
+  <HelpSidebar onOpenWelcome={() => setWelcomeOpen(true)} />
 
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -122,9 +146,19 @@ export default function Home() {
                   variant="outline"
                   size="sm"
                   onClick={() => setHelpOpen(true)}
+                  className="flex items-center"
                 >
                   <Keyboard className="w-4 h-4 mr-2" />
-                  Shortcuts
+                  <span className="hidden sm:inline">Shortcuts</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMnemonicsOpen(true)}
+                  className="flex items-center"
+                >
+                  <Cpu className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Mnemonics</span>
                 </Button>
               </div>
             </div>
@@ -133,19 +167,19 @@ export default function Home() {
 
         <main className="container mx-auto px-4 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="flex gap-2 flex-wrap">
+              <div className="lg:col-span-2 space-y-6">
+              <div className="flex gap-2 flex-nowrap sm:flex-wrap overflow-x-auto">
                 <Button onClick={runProgram} disabled={isRunning} size="sm">
                   <Play className="w-4 h-4 mr-2" />
-                  Run (R)
+                  <span className="hidden sm:inline">Run (R)</span>
                 </Button>
                 <Button onClick={stepInstruction} disabled={isRunning} size="sm" variant="outline">
                   <SkipForward className="w-4 h-4 mr-2" />
-                  Step (S)
+                  <span className="hidden sm:inline">Step (S)</span>
                 </Button>
                 <Button onClick={resetSimulator} size="sm" variant="outline">
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset (X)
+                  <span className="hidden sm:inline">Reset (X)</span>
                 </Button>
                 <Button
                   onClick={() => setConsoleOpen(!consoleOpen)}
@@ -153,16 +187,27 @@ export default function Home() {
                   variant="outline"
                 >
                   <Terminal className="w-4 h-4 mr-2" />
-                  Console
+                  <span className="hidden sm:inline">Console</span>
                 </Button>
                 <div className="ml-auto flex gap-2">
+                  <Button onClick={() => setMemoryOpen(true)} size="sm" variant="outline">
+                    <span className="sr-only">Memory</span>
+                    <span className="inline sm:hidden">M</span>
+                    <span className="hidden sm:inline">Memory</span>
+                  </Button>
+                  {processorType === '8051' && (
+                    <Button onClick={() => setExternalMemoryOpen(true)} size="sm" variant="outline" title="Load external memory for testing">
+                      <span className="sr-only">Load Ext Memory</span>
+                      <span className="text-xs">Ext Mem</span>
+                    </Button>
+                  )}
                   <Button onClick={handleSaveCode} size="sm" variant="outline">
                     <Save className="w-4 h-4 mr-2" />
-                    Save
+                    <span className="hidden sm:inline">Save</span>
                   </Button>
                   <Button onClick={handleLoadCode} size="sm" variant="outline">
                     <FolderOpen className="w-4 h-4 mr-2" />
-                    Load
+                    <span className="hidden sm:inline">Load</span>
                   </Button>
                 </div>
               </div>
@@ -170,6 +215,8 @@ export default function Home() {
               <div className="h-[500px]">
                 <CodeEditor />
               </div>
+
+              <DisassemblyPanel />
 
               {consoleOpen && <Console />}
             </div>
