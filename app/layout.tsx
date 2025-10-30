@@ -1,3 +1,4 @@
+// @ts-ignore: allow importing global CSS with no type declarations
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
