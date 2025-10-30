@@ -1,5 +1,7 @@
 # Deliverables Checklist ✅
 
+**Author:** Amaljith M V
+
 ## Core Infrastructure
 
 ### Opcode Tables

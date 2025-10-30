@@ -1,5 +1,7 @@
 # Quick Start Guide: Machine Code & Disassembly
 
+**Author:** Amaljith M V
+
 ## For Users
 
 ### 1. Write Assembly Code

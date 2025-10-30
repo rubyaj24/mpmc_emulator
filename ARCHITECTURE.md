@@ -1,5 +1,7 @@
 # System Architecture Guide
 
+**Author:** Amaljith M V
+
 ## Overview
 
 MPMC is a modular microprocessor emulator built with React/Next.js and TypeScript. The system is organized into three layers:

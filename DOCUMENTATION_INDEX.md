@@ -1,5 +1,7 @@
 # 📚 Documentation Index
 
+**Author:** Amaljith M V
+
 ## Quick Navigation
 
 ### 🎯 Start Here

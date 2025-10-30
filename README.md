@@ -2,6 +2,8 @@
 
 A comprehensive web-based emulator for Intel 8086 and 8051 microprocessors. This platform provides real-time assembly code execution, debugging capabilities, and a complete opcode reference.
 
+**Author:** Amaljith M V
+
 ## Features
 
 ### 🎯 Core Emulation

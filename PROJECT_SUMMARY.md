@@ -1,6 +1,8 @@
 # Visual Project Summary
 
-## Mission Accomplished
+**Author:** Amaljith M V
+
+## 🎯 Mission Accomplished
 
 Successfully implemented comprehensive opcode infrastructure for the MPMC microprocessor emulator, enabling assembly-to-bytecode compilation and real-time machine code visualization.
 

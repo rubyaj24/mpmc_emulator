@@ -1,5 +1,7 @@
 # Implementation Summary: Opcode & Machine Code System
 
+**Author:** Amaljith M V
+
 ## Overview
 Successfully implemented a comprehensive opcode infrastructure for the MPMC emulator, enabling assembly-to-bytecode compilation, real-time disassembly visualization, and foundation for memory-based execution.
 

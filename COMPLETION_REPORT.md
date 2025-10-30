@@ -1,5 +1,7 @@
 # ✅ PROJECT COMPLETION REPORT
 
+**Author:** Amaljith M V
+
 ## Executive Summary
 
 Successfully implemented a comprehensive opcode infrastructure for the MPMC (Microprocessor Emulator) project, enabling assembly-to-bytecode compilation and real-time machine code visualization.

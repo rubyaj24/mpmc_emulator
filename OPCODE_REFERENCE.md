@@ -1,5 +1,7 @@
 # Opcode System Documentation
 
+**Author:** Amaljith M V
+
 ## Overview
 
 The MPMC emulator uses a two-tier system for instruction handling:

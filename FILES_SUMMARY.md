@@ -1,5 +1,7 @@
 # New Files & Changes Summary
 
+**Author:** Amaljith M V
+
 ## 📁 New Files Created (6 Files)
 
 ### 1. Core Infrastructure
