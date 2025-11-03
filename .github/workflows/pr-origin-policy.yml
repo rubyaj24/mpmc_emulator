@@ -1,8 +1,7 @@
 # url=https://github.com/rubyaj24/<repo>/blob/main/.github/workflows/pr-origin-policy.yml
-# PR origin policy workflow (fixed YAML syntax).
-# Place this file in the base branches (dev, stage, main). GitHub runs pull_request workflows
-# from the base branch, so the workflow must exist in the branch you're protecting.
-#
+# Fixed PR origin policy workflow. Place this file in the base branches (dev, stage, main).
+# After the workflow has run at least once on a branch, add "pr-origin-policy" as a required
+# status check in that branch's protection rule.
 name: PR Origin Policy
 
 on:
@@ -14,11 +13,12 @@ jobs:
     name: pr-origin-policy
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: read
-      issues: read
       contents: read
+      issues: read
+      pull-requests: read
       actions: read
       checks: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -101,23 +101,19 @@ jobs:
 
           case "$base_ref" in
             dev)
-              # Any feature branch may target dev
               allowed=true
               ;;
             stage)
-              # Accept: head == dev OR release/* OR hotfix/* OR label promote-from-dev
               if [ "$head_ref" = "dev" ] || matches_glob "$head_ref" "release/*" || matches_glob "$head_ref" "hotfix/*" || has_label "promote-from-dev"; then
                 allowed=true
               fi
               ;;
             main)
-              # Accept: head == stage OR release/* OR hotfix/* OR label promote-from-stage OR opened by release-manager team
               if [ "$head_ref" = "stage" ] || matches_glob "$head_ref" "release/*" || matches_glob "$head_ref" "hotfix/*" || has_label "promote-from-stage" || [ "$is_release_manager" = "true" ]; then
                 allowed=true
               fi
               ;;
             *)
-              # other targets: allow
               allowed=true
               ;;
           esac
