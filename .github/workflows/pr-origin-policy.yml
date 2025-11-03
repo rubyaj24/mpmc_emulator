@@ -1,0 +1,156 @@
+# url=https://github.com/rubyaj24/<repo>/blob/main/.github/workflows/pr-origin-policy.yml
+# Add this workflow to enforce that PRs promoting changes follow dev -> stage -> main flow.
+# It creates a required status check named "pr-origin-policy" (set this as required in branch protection).
+#
+# Behavior:
+# - PR targeting "stage" must have the head branch be:
+#     - "dev", OR
+#     - match "release/*" or "hotfix/*", OR
+#     - have label "promote-from-dev"
+#   (This covers direct promotions from dev and release branches derived from dev.)
+# - PR targeting "main" must have the head branch be:
+#     - "stage", OR
+#     - match "release/*" or "hotfix/*", OR
+#     - be opened by a user in the "release-manager" team (org-only check), OR
+#     - have label "promote-from-stage"
+# - PRs targeting "dev" are allowed from feature branches (feature/*) or any branch.
+#
+# You can adapt branch name patterns and required labels/team names to your org.
+#
+# After adding this workflow, add "pr-origin-policy" as a required status check under:
+# Settings → Branches → Branch protection rules for "stage" and "main".
+#
+name: PR Origin Policy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, edited]
+
+jobs:
+  validate-pr-origin:
+    name: pr-origin-policy
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      issues: read
+      contents: read
+      actions: read
+      checks: write
+    steps:
+      - name: Checkout (needed for gh cli if used)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node (for optional JS tooling)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Get PR context
+        id: pr
+        run: |
+          echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          echo "pr_head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+          echo "pr_base_ref=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
+          echo "pr_user=${{ github.event.pull_request.user.login }}" >> $GITHUB_OUTPUT
+      - name: Fetch PR labels
+        id: labels
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          OWNER=${{ github.repository_owner }}
+          REPO=${{ github.event.repository.name }}
+          # Use the REST API to list labels on the PR
+          labels_json=$(gh api repos/${OWNER}/${REPO}/issues/${PR}/labels --jq '.[].name' 2>/dev/null || echo "")
+          # create a whitespace separated label list
+          labels_list=$(echo "$labels_json" | tr '\n' ' ' | sed -e 's/  */ /g' -e 's/^ //; s/ $//')
+          echo "pr_labels=$labels_list" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate promotion rules
+        id: validate
+        run: |
+          set -euo pipefail
+          head_ref="${{ steps.pr.outputs.pr_head_ref }}"
+          base_ref="${{ steps.pr.outputs.pr_base_ref }}"
+          pr_user="${{ steps.pr.outputs.pr_user }}"
+          pr_labels="${{ steps.labels.outputs.pr_labels }}"
+
+          echo "PR head: $head_ref"
+          echo "PR base: $base_ref"
+          echo "Labels: $pr_labels"
+          echo "User: $pr_user"
+
+          # Helpers
+          has_label() {
+            label="$1"
+            if echo "$pr_labels" | grep -qw "$label"; then
+              return 0
+            fi
+            return 1
+          }
+
+          matches_pattern() {
+            branch="$1"
+            pattern="$2"
+            # convert simple glob like release/* to regex
+            regex="^${pattern//\*/.*}$"
+            if [[ "$branch" =~ $regex ]]; then
+              return 0
+            fi
+            return 1
+          }
+
+          # Optionally check membership of an org team for release privileges.
+          is_release_manager=false
+          ORG="${{ github.repository_owner }}"
+          TEAM_SLUG="release-manager"
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            # gh cli gives a non-zero exit code if user not found in team, ignore failures
+            if gh api --silent \
+                "/orgs/${ORG}/teams/${TEAM_SLUG}/memberships/${pr_user}" >/dev/null 2>&1; then
+              is_release_manager=true
+            fi
+          fi
+
+          # Rules
+          ok=false
+          if [ "$base_ref" = "dev" ]; then
+            # PR into dev: allow (feature branches, etc)
+            ok=true
+          elif [ "$base_ref" = "stage" ]; then
+            # PR into stage: must come from dev OR release/* OR hotfix/* OR have label "promote-from-dev"
+            if [ "$head_ref" = "dev" ] || matches_pattern "$head_ref" "release/*" || matches_pattern "$head_ref" "hotfix/*" || has_label "promote-from-dev"; then
+              ok=true
+            fi
+          elif [ "$base_ref" = "main" ]; then
+            # PR into main: must come from stage OR release/* OR hotfix/* OR be opened by release-manager OR have label "promote-from-stage"
+            if [ "$head_ref" = "stage" ] || matches_pattern "$head_ref" "release/*" || matches_pattern "$head_ref" "hotfix/*" || [ "$is_release_manager" = "true" ] || has_label "promote-from-stage"; then
+              ok=true
+            fi
+          else
+            # other branches: allow by default
+            ok=true
+          fi
+
+          if [ "$ok" = "true" ]; then
+            echo "Policy check passed: PR base '$base_ref' allowed from head '$head_ref'."
+            exit 0
+          else
+            echo "::error title=pr-origin-policy::Promotion policy violation"
+            echo "::error ::PR targeting '$base_ref' is not allowed from head branch '$head_ref'."
+            echo "::error ::Allowed for target 'stage': head must be 'dev', release/*, hotfix/*, or label 'promote-from-dev'."
+            echo "::error ::Allowed for target 'main': head must be 'stage', release/*, hotfix/*, label 'promote-from-stage', or opened by 'release-manager' team."
+            echo "::error ::If this is an intended exception, add the appropriate label or have a release-manager open/approve the PR."
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload diagnostic info (non-fatal, for logs)
+        if: always()
+        run: |
+          echo "pr_head_ref=${{ steps.pr.outputs.pr_head_ref }}"
+          echo "pr_base_ref=${{ steps.pr.outputs.pr_base_ref }}"
+          echo "pr_labels=${{ steps.labels.outputs.pr_labels }}"
