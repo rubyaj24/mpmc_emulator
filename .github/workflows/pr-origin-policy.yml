@@ -1,9 +1,7 @@
-# Add this workflow to enforce promotion rules dev -> stage -> main.
-# Place this file in the target/base branches (stage and main). GitHub runs pull_request workflows
+# url=https://github.com/rubyaj24/<repo>/blob/main/.github/workflows/pr-origin-policy.yml
+# PR origin policy workflow (fixed YAML syntax).
+# Place this file in the base branches (dev, stage, main). GitHub runs pull_request workflows
 # from the base branch, so the workflow must exist in the branch you're protecting.
-#
-# After adding this file to stage and main, add "pr-origin-policy" as a required status check
-# in Settings → Branches → Branch protection rules for "stage" and "main".
 #
 name: PR Origin Policy
 
@@ -37,16 +35,16 @@ jobs:
 
       - name: Get PR labels
         id: labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR=${{ github.event.pull_request.number }}
           OWNER=${{ github.repository_owner }}
           REPO=${{ github.event.repository.name }}
           # Use the REST API to list labels on the PR; fall back to empty
-          labels_json=$(gh api repos/${OWNER}/${REPO}/issues/${PR}/labels --jq '.[].name' 2>/dev/null || echo "")
+          labels_json=$(gh api repos/"${OWNER}"/"${REPO}"/issues/"${PR}"/labels --jq '.[].name' 2>/dev/null || echo "")
           labels_list=$(echo "$labels_json" | tr '\n' ' ' | sed -e 's/  */ /g' -e 's/^ //; s/ $//')
           echo "labels=$labels_list" >> "$GITHUB_OUTPUT"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Validate promotion rules
         id: validate
@@ -93,6 +91,7 @@ jobs:
           TEAM_SLUG="release-manager"
           is_release_manager=false
           if [ -n "${GITHUB_TOKEN:-}" ]; then
+            # use gh to check membership; suppress errors
             if gh api --silent "/orgs/${ORG}/teams/${TEAM_SLUG}/memberships/${author}" >/dev/null 2>&1; then
               is_release_manager=true
             fi
