@@ -1,4 +1,7 @@
+<img width="1712" height="864" alt="Frame 1" src="https://github.com/user-attachments/assets/a2f0a8f4-a40f-4ced-9b5b-89758602a149" />
+
 # Microprocessor Emulator (MPMC)
+
 
 A comprehensive web-based emulator for Intel 8086 and 8051 microprocessors. This platform provides real-time assembly code execution, debugging capabilities, and a complete opcode reference.
 
@@ -293,7 +296,7 @@ app/
 2. Create a feature branch
 3. Make changes to lib/opcodes or components
 4. Test on both 8086 and 8051 modes
-5. Submit pull request
+5. Submit pull request to dev branch
 
 ---
 
