@@ -1,0 +1,144 @@
+# Add this workflow to enforce promotion rules dev -> stage -> main.
+# Place this file in the target/base branches (stage and main). GitHub runs pull_request workflows
+# from the base branch, so the workflow must exist in the branch you're protecting.
+#
+# After adding this file to stage and main, add "pr-origin-policy" as a required status check
+# in Settings → Branches → Branch protection rules for "stage" and "main".
+#
+name: PR Origin Policy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, edited]
+
+jobs:
+  validate-pr-origin:
+    name: pr-origin-policy
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      issues: read
+      contents: read
+      actions: read
+      checks: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR metadata
+        id: pr
+        run: |
+          echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          echo "head_ref=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
+          echo "base_ref=${{ github.event.pull_request.base.ref }}" >> "$GITHUB_OUTPUT"
+          echo "author=${{ github.event.pull_request.user.login }}" >> "$GITHUB_OUTPUT"
+
+      - name: Get PR labels
+        id: labels
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          OWNER=${{ github.repository_owner }}
+          REPO=${{ github.event.repository.name }}
+          # Use the REST API to list labels on the PR; fall back to empty
+          labels_json=$(gh api repos/${OWNER}/${REPO}/issues/${PR}/labels --jq '.[].name' 2>/dev/null || echo "")
+          labels_list=$(echo "$labels_json" | tr '\n' ' ' | sed -e 's/  */ /g' -e 's/^ //; s/ $//')
+          echo "labels=$labels_list" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate promotion rules
+        id: validate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          head_ref="${{ steps.pr.outputs.head_ref }}"
+          base_ref="${{ steps.pr.outputs.base_ref }}"
+          author="${{ steps.pr.outputs.author }}"
+          labels="${{ steps.labels.outputs.labels }}"
+
+          echo "PR head: $head_ref"
+          echo "PR base: $base_ref"
+          echo "Labels: $labels"
+          echo "Author: $author"
+
+          has_label() {
+            label="$1"
+            if [ -z "$labels" ]; then
+              return 1
+            fi
+            for l in $labels; do
+              if [ "$l" = "$label" ]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          matches_glob() {
+            branch="$1"
+            pattern="$2"
+            regex="^${pattern//\*/.*}$"
+            if [[ "$branch" =~ $regex ]]; then
+              return 0
+            fi
+            return 1
+          }
+
+          # optional org team slug for release managers (adjust slug if needed)
+          ORG="${{ github.repository_owner }}"
+          TEAM_SLUG="release-manager"
+          is_release_manager=false
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            if gh api --silent "/orgs/${ORG}/teams/${TEAM_SLUG}/memberships/${author}" >/dev/null 2>&1; then
+              is_release_manager=true
+            fi
+          fi
+
+          allowed=false
+
+          case "$base_ref" in
+            dev)
+              # Any feature branch may target dev
+              allowed=true
+              ;;
+            stage)
+              # Accept: head == dev OR release/* OR hotfix/* OR label promote-from-dev
+              if [ "$head_ref" = "dev" ] || matches_glob "$head_ref" "release/*" || matches_glob "$head_ref" "hotfix/*" || has_label "promote-from-dev"; then
+                allowed=true
+              fi
+              ;;
+            main)
+              # Accept: head == stage OR release/* OR hotfix/* OR label promote-from-stage OR opened by release-manager team
+              if [ "$head_ref" = "stage" ] || matches_glob "$head_ref" "release/*" || matches_glob "$head_ref" "hotfix/*" || has_label "promote-from-stage" || [ "$is_release_manager" = "true" ]; then
+                allowed=true
+              fi
+              ;;
+            *)
+              # other targets: allow
+              allowed=true
+              ;;
+          esac
+
+          if [ "$allowed" = "true" ]; then
+            echo "Policy check passed: allow '$head_ref' -> '$base_ref'"
+            exit 0
+          fi
+
+          echo "::error title=pr-origin-policy::Promotion policy violation"
+          echo "::error ::PR targeting '$base_ref' is not allowed from head branch '$head_ref'."
+          echo "::error ::Allowed for target 'stage': head must be 'dev', release/*, hotfix/*, or label 'promote-from-dev'."
+          echo "::error ::Allowed for target 'main': head must be 'stage', release/*, hotfix/*, label 'promote-from-stage', or opened by 'release-manager' team."
+          echo "::error ::If this is an intended exception, either add the appropriate label or have a release-manager create/approve the PR."
+          exit 1
+
+      - name: Always: output diagnostic info
+        if: always()
+        run: |
+          echo "head=${{ steps.pr.outputs.head_ref }}"
+          echo "base=${{ steps.pr.outputs.base_ref }}"
+          echo "labels=${{ steps.labels.outputs.labels }}"
+          echo "author=${{ steps.pr.outputs.author }}"
