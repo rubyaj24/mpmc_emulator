@@ -254,6 +254,8 @@ npm start
 - [ ] Program counter animation
 - [ ] Multi-file assembly projects
 - [ ] Instruction cache simulation
+- [ ] Cody - An AI Assistant for show errors, suggestion, etc.
+- [ ] 7 segment display to how outputs.
 
 ---
 
