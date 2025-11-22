@@ -137,10 +137,20 @@ export default function Home() {
                 <Cpu className="w-8 h-8 text-blue-600" />
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">
-                    {isMobile ? "MP Simulator" : "Microprocessor Simulator"}
+                    {isMobile
+                      ? processorType === '8086'
+                        ? 'MP Simulator'
+                        : 'MC Simulator'
+                      : processorType === '8086'
+                      ? 'Microprocessor Simulator'
+                      : 'Microcontroller Simulator'}
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Intel 8086 & 8051 Emulation Platform
+                    {isMobile 
+                      ? processorType === '8086'
+                         ? 'Intel 8086 Emulator' 
+                         : 'Intel 8051 Emulator' 
+                         : 'Educational'}
                   </p>
                 </div>
               </div>
