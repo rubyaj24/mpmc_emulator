@@ -255,6 +255,11 @@ function generate8051(instruction: AssemblyInstruction): number[] {
         bytes.push(0x00);
         break;
 
+      case 'HLT':
+        // Halt — for 8051 this project uses a custom opcode 0xFF, for 8086 we'll map to 0xF4
+        bytes.push(0xFF);
+        break;
+
       default:
         throw new Error(`Unknown instruction: ${mnemonic}`);
     }
@@ -389,6 +394,11 @@ function generate8086(instruction: AssemblyInstruction): number[] {
       // NOP
       case 'NOP':
         bytes.push(0x90);
+        break;
+
+      case 'HLT':
+        // Map HLT to 0xF4 (8086 HLT instruction)
+        bytes.push(0xF4);
         break;
 
       default:
