@@ -495,13 +495,13 @@ export const OPCODES_8086: Opcode8086Map = {
     description: 'No Operation',
   },
 
-  // HLT (custom)
+  // HLT
   'HLT': {
     mnemonic: 'HLT',
-    opcode: '0xFF',
+    opcode: '0xF4',
     operands: '',
     bytes: 1,
-    description: 'Halt (custom)',
+    description: 'Halt (HLT opcode 0xF4)',
   },
 };
 
