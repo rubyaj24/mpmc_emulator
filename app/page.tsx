@@ -33,6 +33,7 @@ import {
   Save,
   FolderOpen,
 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function Home() {
   const {
@@ -53,6 +54,7 @@ export default function Home() {
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [externalMemoryOpen, setExternalMemoryOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     // Show welcome modal on first visit
@@ -74,6 +76,13 @@ export default function Home() {
     localStorage.setItem(`code-${processorType}`, code);
   }, [code, processorType]);
 
+  useEffect(() => {
+    // initialize and listen for window size changes
+    handleMobile();
+    window.addEventListener('resize', handleMobile);
+    return () => window.removeEventListener('resize', handleMobile);
+  }, []);
+
   const handleSaveCode = () => {
     const blob = new Blob([code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -83,6 +92,14 @@ export default function Home() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const handleMobile = () => {
+    if (window.innerWidth <= 768) {
+      setIsMobile(true);
+    } else {
+      setIsMobile(false);
+    }
+  }
 
   const handleLoadCode = () => {
     const input = document.createElement('input');
@@ -120,7 +137,7 @@ export default function Home() {
                 <Cpu className="w-8 h-8 text-blue-600" />
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">
-                    Microprocessor Simulator
+                    {isMobile ? "MP Simulator" : "Microprocessor Simulator"}
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     Intel 8086 & 8051 Emulation Platform
@@ -141,6 +158,8 @@ export default function Home() {
                     <SelectItem value="8051">Intel 8051</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <ThemeToggle />
 
                 <Button
                   variant="outline"
