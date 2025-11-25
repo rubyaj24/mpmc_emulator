@@ -38,7 +38,7 @@ export function MnemonicsModal({ open, onOpenChange }: MnemonicsModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">Instruction Mnemonics</DialogTitle>
           <DialogDescription>
-            Reference and quick tutorial for 8086 mnemonics. Use the search to filter.
+            Reference and quick tutorial for {processorType === '8086' ? '8086' : '8051'} mnemonics. Use the search to filter.
           </DialogDescription>
         </DialogHeader>
 
@@ -53,24 +53,28 @@ export function MnemonicsModal({ open, onOpenChange }: MnemonicsModalProps) {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-auto">
-            {list.map((m) => (
-              <button
-                key={m.mnemonic}
-                onClick={() => setSelected(m.mnemonic)}
-                className={`text-left p-2 rounded bg-muted/40 hover:bg-muted transition ${selected === m.mnemonic ? 'ring-2 ring-blue-400' : ''}`}
-              >
-                <div className="font-mono font-semibold">{m.mnemonic}</div>
-                <div className="text-xs text-muted-foreground">{m.description}</div>
-              </button>
-            ))}
+          <div className="grid grid-cols-1 p-1 sm:grid-cols-2 gap-2 max-h-64 overflow-auto">
+            {list.map((m, idx) => {
+              const itemKey = `${m.mnemonic}-${idx}`;
+              return (
+                <button
+                  key={itemKey}
+                  onClick={() => setSelected(itemKey)}
+                  className={`text-left p-2 rounded bg-muted/40 hover:bg-muted transition ${selected === itemKey ? 'ring-2 ring-blue-400' : ''}`}
+                >
+                  <div className="font-mono font-semibold">{m.mnemonic}</div>
+                  <div className="text-xs text-muted-foreground">{m.description}</div>
+                </button>
+              );
+            })}
           </div>
 
           {selected && (
             <div className="mt-4 p-3 border rounded bg-background/50">
               {(() => {
-                const entry = list.find((x) => x.mnemonic === selected);
-                if (!entry) return null;
+                const entryIndex = list.findIndex((x, i) => `${x.mnemonic}-${i}` === selected);
+                if (entryIndex === -1) return null;
+                const entry = list[entryIndex];
                 return (
                   <div>
                     <div className="flex items-start justify-between">
@@ -83,13 +87,13 @@ export function MnemonicsModal({ open, onOpenChange }: MnemonicsModalProps) {
                           <>
                             <button
                               onClick={() => navigator.clipboard?.writeText(entry.example || '')}
-                              className="px-2 py-1 text-xs rounded bg-primary text-white"
+                              className="px-2 py-1 text-xs rounded bg-primary text-primary-foreground"
                             >
                               Copy example
                             </button>
                             <button
                               onClick={() => window.dispatchEvent(new CustomEvent('insertSnippet', { detail: entry.example }))}
-                              className="px-2 py-1 text-xs rounded border bg-background"
+                              className="px-2 py-1 text-xs rounded border bg-background text-foreground"
                             >
                               Insert into editor
                             </button>
