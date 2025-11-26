@@ -33,7 +33,7 @@ import {
   Save,
   FolderOpen,
 } from 'lucide-react';
-import ThemeToggle from '@/components/ThemeToggle';
+import HeaderDrawer from '@/components/HeaderDrawer';
 
 export default function Home() {
   const {
@@ -119,6 +119,14 @@ export default function Home() {
     input.click();
   };
 
+  const [githubOpen, setGithubOpen] = useState(false);
+
+  const handleOpenGithub = () => {
+    setGithubOpen(true);
+    // Open GitHub in new tab
+    window.open('https://github.com/rubyaj24/mpmc_emulator', '_blank');
+  };
+
   return (
       <>
   <KeyboardHandler onShowHelp={() => setHelpOpen(true)} onOpenMemory={() => setMemoryOpen(true)} />
@@ -169,26 +177,12 @@ export default function Home() {
                   </SelectContent>
                 </Select>
 
-                <ThemeToggle />
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setHelpOpen(true)}
-                  className="flex items-center"
-                >
-                  <Keyboard className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Shortcuts</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMnemonicsOpen(true)}
-                  className="flex items-center"
-                >
-                  <Cpu className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Mnemonics</span>
-                </Button>
+                {/* Keep processor select visible; move other header tools into drawer */}
+                <HeaderDrawer
+                  onOpenHelp={() => setHelpOpen(true)}
+                  onOpenMnemonics={() => setMnemonicsOpen(true)}
+                  onOpenGithub={() => handleOpenGithub()}
+                />
               </div>
             </div>
           </div>
