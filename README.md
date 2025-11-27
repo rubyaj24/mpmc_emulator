@@ -5,7 +5,10 @@
 
 A comprehensive web-based emulator for Intel 8086 and 8051 microprocessors. This platform provides real-time assembly code execution, debugging capabilities, and a complete opcode reference.
 
+<img width="1992" height="1080" alt="Frame 13" src="https://github.com/user-attachments/assets/063a0aaa-3916-4fd8-84e1-b37df39422da" />
+
 **Author:** Amaljith M V
+
 
 ## Features
 
@@ -254,6 +257,8 @@ npm start
 - [ ] Program counter animation
 - [ ] Multi-file assembly projects
 - [ ] Instruction cache simulation
+- [ ] Cody - An AI Assistant for show errors, suggestion, etc.
+- [ ] 7 segment display to how outputs.
 
 ---
 
