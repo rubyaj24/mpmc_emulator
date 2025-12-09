@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Script from 'next/script';
+
 import { useSimulatorStore } from '@/lib/store';
 import { CodeEditor } from '@/components/CodeEditor';
 import { RegistersDisplay } from '@/components/RegistersDisplay';
@@ -34,6 +36,10 @@ import {
   FolderOpen,
 } from 'lucide-react';
 import HeaderDrawer from '@/components/HeaderDrawer';
+
+declare global {
+  interface Window { chatbase?: string }
+}
 
 export default function Home() {
   const {
@@ -128,14 +134,18 @@ export default function Home() {
   };
 
   return (
-      <>
-  <KeyboardHandler onShowHelp={() => setHelpOpen(true)} onOpenMemory={() => setMemoryOpen(true)} />
-  <KeyboardHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
-  <MnemonicsModal open={mnemonicsOpen} onOpenChange={setMnemonicsOpen} />
-  <MemoryEditModal open={memoryOpen} onOpenChange={setMemoryOpen} />
-  <ExternalMemoryLoadModal open={externalMemoryOpen} onOpenChange={setExternalMemoryOpen} />
-  <WelcomeModal open={welcomeOpen} onOpenChange={setWelcomeOpen} />
-  <HelpSidebar onOpenWelcome={() => setWelcomeOpen(true)} />
+    <>
+      <Script id="chatbase-inline" strategy="afterInteractive">
+{`(function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...args)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(args)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target[prop](...args)}})}const onLoad=function(){const s=document.createElement("script");s.src="https://www.chatbase.co/embed.min.js";s.id="fNGYLp9wP56VHZldW8GSa";s.domain="www.chatbase.co";document.body.appendChild(s)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();`}
+      </Script>
+
+      <KeyboardHandler onShowHelp={() => setHelpOpen(true)} onOpenMemory={() => setMemoryOpen(true)} />
+      <KeyboardHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
+      <MnemonicsModal open={mnemonicsOpen} onOpenChange={setMnemonicsOpen} />
+      <MemoryEditModal open={memoryOpen} onOpenChange={setMemoryOpen} />
+      <ExternalMemoryLoadModal open={externalMemoryOpen} onOpenChange={setExternalMemoryOpen} />
+      <WelcomeModal open={welcomeOpen} onOpenChange={setWelcomeOpen} />
+      <HelpSidebar onOpenWelcome={() => setWelcomeOpen(true)} />
 
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
